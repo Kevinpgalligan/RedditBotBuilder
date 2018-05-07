@@ -24,6 +24,7 @@ class Action(abc.ABC):
     def do_execute(self, *args, **kwargs):
         return
 
+# TODO: this is baaaaaaaaaaaad.
 def execute_actions_on(actions, *args, **kwargs):
     """Executes a list of actions on the provided args. If an action
     throws an exception, it is caught and logged; this will not affect

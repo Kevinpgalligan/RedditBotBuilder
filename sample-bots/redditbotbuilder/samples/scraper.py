@@ -1,6 +1,6 @@
-from redditbotbuilder.bots import RedditBotBuilder
+import redditbotbuilder
 
-RedditBotBuilder.of_program_args("testingground4bots") \
-    .with_comment_processing_action(lambda comment: print(comment.body))\
+redditbotbuilder.of_program_args("testingground4bots")\
+    .with_comment_processing(lambda comment: print(comment.body))\
     .build()\
     .run()

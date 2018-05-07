@@ -22,7 +22,10 @@ class TestPraw:
             _args=["script.py", CLIENT_ID, CLIENT_SECRET, USER_AGENT])
 
         assert self.expected_reddit == reddit
-        self.reddit_constructor.assert_called_once_with(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, user_agent=USER_AGENT)
+        self.reddit_constructor.assert_called_once_with(
+            client_id=CLIENT_ID,
+            client_secret=CLIENT_SECRET,
+            user_agent=USER_AGENT)
 
     def test_create_reddit_from_program_args_with_write_permissions(self):
         reddit = create_reddit_from_program_args(
@@ -39,4 +42,6 @@ class TestPraw:
 
     def test_create_reddit_from_program_args_when_num_args_incorrect(self):
         with pytest.raises(ValueError):
-            create_reddit_from_program_args(_reddit_constructor=self.reddit_constructor, _args=["scripy.py", CLIENT_ID])
+            create_reddit_from_program_args(
+                _reddit_constructor=self.reddit_constructor,
+                _args=["scripy.py", CLIENT_ID])
