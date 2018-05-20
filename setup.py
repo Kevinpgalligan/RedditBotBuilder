@@ -18,5 +18,5 @@ setup(
     ],
     packages=find_packages("src"),
     package_dir={'': 'src'},
-    install_requires=["praw"]
+    install_requires=["praw", "prawcore"]
 )

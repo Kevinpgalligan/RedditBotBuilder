@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from redditbotbuilder.praw import create_reddit_from_program_args
+from redditbotbuilder.util.praw import create_reddit_from_program_args
 
 CLIENT_ID = "client"
 CLIENT_SECRET = "secret"

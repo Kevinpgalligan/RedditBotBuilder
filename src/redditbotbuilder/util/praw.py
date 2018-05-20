@@ -1,6 +1,6 @@
-"""Various utilities for working with the PRAW API.
+"""Convenience utilities for working with the PRAW API.
 
-This includes functions to quickly instantiate Reddit instances.
+This includes concise functions for instantiating Reddit instances.
 """
 
 import praw
@@ -10,16 +10,20 @@ READ_CREDENTIAL_NAMES = ["client_id", "client_secret", "user_agent"]
 WRITE_CREDENTIAL_NAMES = READ_CREDENTIAL_NAMES + ["username", "password"]
 SETS_OF_CREDENTIAL_NAMES = [READ_CREDENTIAL_NAMES, WRITE_CREDENTIAL_NAMES]
 
-def create_reddit_from_program_args(
-        _reddit_constructor=praw.Reddit,
-        _args=sys.argv):
+def normalized(s):
+    return s.lower()
+
+def normalized_author_name(item):
+    return "[deleted]" if item.author is None else normalized(item.author.name)
+
+def create_reddit_from_program_args(_reddit_constructor=praw.Reddit, _args=sys.argv):
     """Creates a PRAW Reddit instance by reading credentials from sys.argv.
 
-    The program is expected to be called like:
+    The program is expected to be called like...
 
         `python program.py client_id client_secret user_agent`
 
-    ...for a read-only Reddit instance, or like:
+    ...for a read-only Reddit instance, or like...
 
         `python program.py client_id client_secret user_agent username password`
 
@@ -30,7 +34,7 @@ def create_reddit_from_program_args(
 
     :raises ValueError: if incorrect number of args were passed.
     :raises: any other error that may be raised by the PRAW Reddit constructor.
-    :return: a PRAW Reddit instance.
+    :returns: a PRAW Reddit instance.
     """
     return _reddit_constructor(**_get_parameters(_args))
 
