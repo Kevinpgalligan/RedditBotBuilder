@@ -1,5 +1,5 @@
 from .action import CommentProcessingAction
-from redditbotbuilder.util.praw import create_reddit_from_program_args
+from redditbotbuilder.util.praw import reddit_credentials_from_program_args
 from .bot import RedditBot
 
 class BotBuildingException(Exception):
@@ -45,7 +45,7 @@ class RedditBotBuilder:
 def of_program_args(
         *bot_builder_args,
         _bot_builder_constructor=RedditBotBuilder,
-        _create_reddit_fn=create_reddit_from_program_args,
+        _create_reddit_fn=reddit_credentials_from_program_args,
         **bot_builder_kwargs):
     """Creates a RedditBotBuilder with a PRAW Reddit instance that is instantiated from program args.
 

@@ -1,6 +1,4 @@
-"""Convenience utilities for working with the PRAW API.
-
-This includes concise functions for instantiating Reddit instances.
+"""Utilities for working with the PRAW API.
 """
 
 import praw
@@ -10,13 +8,30 @@ READ_CREDENTIAL_NAMES = ["client_id", "client_secret", "user_agent"]
 WRITE_CREDENTIAL_NAMES = READ_CREDENTIAL_NAMES + ["username", "password"]
 SETS_OF_CREDENTIAL_NAMES = [READ_CREDENTIAL_NAMES, WRITE_CREDENTIAL_NAMES]
 
+class RedditFactory:
+
+    def __init__(self, reddit_credentials):
+        self.reddit_credentials = reddit_credentials
+
+    def create(self):
+        return self.reddit_credentials.instantiate_reddit()
+
+class RedditCredentials:
+
+    def __init__(self, credentials_dict, is_read_only):
+        self.credentials_dict = credentials_dict
+        self.is_read_only = is_read_only
+
+    def instantiate_reddit(self, *args, **kwargs):
+        return praw.Reddit(*args, **self.credentials_dict, **kwargs)
+
 def normalized(s):
     return s.lower()
 
 def normalized_author_name(item):
     return "[deleted]" if item.author is None else normalized(item.author.name)
 
-def create_reddit_from_program_args(_reddit_constructor=praw.Reddit, _args=sys.argv):
+def reddit_credentials_from_program_args(_args=sys.argv):
     """Creates a PRAW Reddit instance by reading credentials from sys.argv.
 
     The program is expected to be called like...
@@ -36,21 +51,6 @@ def create_reddit_from_program_args(_reddit_constructor=praw.Reddit, _args=sys.a
     :raises: any other error that may be raised by the PRAW Reddit constructor.
     :returns: a PRAW Reddit instance.
     """
-    return _reddit_constructor(**_get_parameters(_args))
-
-def _get_parameters(args):
-    credentials = args[1:]
-    for names in SETS_OF_CREDENTIAL_NAMES:
-        if len(credentials) == len(names):
-            return dict(zip(names, credentials))
-    raise _parse_args_value_error(credentials)
-
-def _parse_args_value_error(credentials):
-    lines = [
-        "Got credentials of size {}: {}".format(len(credentials), repr(credentials)),
-        "Expected one of the following:"
-    ]
-    for names in SETS_OF_CREDENTIAL_NAMES:
-        lines.append("  " + repr(names))
-    return ValueError("\n".join(lines))
+    # todo fix this
+    return RedditCredentials(dict(zip(WRITE_CREDENTIAL_NAMES, _args[1:])), True)
 

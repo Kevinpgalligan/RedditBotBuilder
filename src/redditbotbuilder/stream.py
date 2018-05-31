@@ -1,57 +1,18 @@
 from redditbotbuilder.util.cache import ItemCache
 
 import time
+import abc
 
-DEFAULT_ITEM_LIMIT = 100
-
-class CommentStreamer:
-
-    def __init__(self, comment_fetcher, ingestion_queue):
-        self.comment_fetcher = comment_fetcher
-        self.ingestion_queue = ingestion_queue
-
-    def run(self):
-        while True:
-            print("well here we are")
-            comments = self.comment_fetcher.get_next_batch()
-            for comment in comments:
-                self.ingestion_queue.put(comment)
-            time.sleep(4)
-
-class CommentFetcher:
-
-    def __init__(self, reddit, subreddits, limit):
-        self.item_fetcher = ItemFetcher(
-            reddit.subreddit(subreddits).comments,
-            limit=limit)
-
-    def get_next_batch(self):
-        return self.item_fetcher.get_next_batch()
-
-class ItemFetcher:
+class ItemStreamer:
     """Fetch new PRAW items from reddit and don't return the same one in successive calls.
     """
 
-    def __init__(self, fetch_fn, limit=DEFAULT_ITEM_LIMIT, _cache_constructor=ItemCache, _time_fn=time.time):
-        """
-        EXAMPLE
-        If you want to get the 50 newest comments from each call:
-
-            ItemStreamer(subreddit.comments, limit=50)
-
-        :param fetch_fn: a PRAW callable that gets a batch of new items
-            from Reddit. Must accept 'limit' as a keyword argument. It should
-            return from the same source every time, as otherwise there will
-            be no guarantee that the same items are never returned twice.
-        :param limit: max number of items to return in a batch. This
-            will be passed as a keyword arg to the stream function.
-            Defaults to 100.
-        """
-        self._fetch_fn = fetch_fn
-        self._limit = limit
+    def __init__(self, fetcher, fetch_limit, _cache_constructor=ItemCache, _time_fn=time.time):
+        self.fetcher = fetcher
+        self.fetch_limit = fetch_limit
         # Cache should be able to hold the number of items returned
-        # by the fetching function (at least).
-        self._cache = _cache_constructor(limit)
+        # by the Reddit API.
+        self._cache = _cache_constructor(fetch_limit)
         self._start_timestamp = _time_fn()
 
     def get_next_batch(self):
@@ -61,7 +22,7 @@ class ItemFetcher:
 
         :return: a list of new items. No guarantee is made about their order.
         """
-        items = list(self._fetch_fn(limit=self._limit))
+        items = list(self.fetcher.fetch(self.fetch_limit))
         # Avoid allocating new memory here.
         start_index_of_old_items = _partition(items, self._is_old)
         del items[start_index_of_old_items:]
@@ -81,3 +42,36 @@ def _partition(items, condition):
     # Returns index of the start of the True part.
     items.sort(key=condition)
     return next((index for index, item in enumerate(items) if condition(item)), len(items))
+
+class ItemFetcher(abc.ABC):
+
+    @abc.abstractmethod
+    def fetch(self, limit):
+        return
+
+class ItemStreamerFactory:
+
+    def __init__(self, fetcher_constructor, reddit_factory, limit, *fetcher_args, **fetcher_kwargs):
+        self.fetcher_constructor = fetcher_constructor
+        self.reddit_factory = reddit_factory
+        self.limit = limit
+        self.fetcher_args = fetcher_args
+        self.fetcher_kwargs = fetcher_kwargs
+
+    def create(self):
+        return ItemStreamer(
+            self.fetcher_constructor(
+                self.reddit_factory.create(),
+                *self.fetcher_args,
+                **self.fetcher_kwargs),
+            self.limit)
+
+class CommentFetcher(ItemFetcher):
+
+    def __init__(self, reddit, subreddits):
+        self.reddit = reddit
+        self.subreddits = subreddits
+
+    def fetch(self, limit):
+        return self.reddit.subreddit(self.subreddits)\
+            .comments(limit=limit)

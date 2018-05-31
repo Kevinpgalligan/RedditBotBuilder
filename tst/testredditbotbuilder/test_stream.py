@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from redditbotbuilder.stream import ItemFetcher
+from redditbotbuilder.stream import ItemStreamer
 
 LIMIT = 100
 
@@ -33,7 +33,7 @@ def validate_get_next_batch(expected_result, streamed_items):
     stream_fn = Mock(return_value=streamed_items)
     cache_constructor = Mock(return_value=cache)
     time_fn = Mock(return_value=START_TIMESTAMP)
-    fetcher = ItemFetcher(stream_fn, limit=LIMIT, _cache_constructor=cache_constructor, _time_fn=time_fn)
+    fetcher = ItemStreamer(stream_fn, limit=LIMIT, _cache_constructor=cache_constructor, _time_fn=time_fn)
 
     result = fetcher.get_next_batch()
 
