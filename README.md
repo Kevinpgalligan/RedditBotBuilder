@@ -81,7 +81,8 @@ number of comments you can retrieve at once, so obviously there are some comment
 I am fed up with battling the multiprocessing module, PRAW (which does not support multiprocessing) and
 the Reddit API. So here is where I officially call it quits.
 
-It hasn't been totally unproductive, however. Some of the lessons I learned:
+It hasn't been totally unproductive, however. Some of the lessons that might be gleaned from my experience:
+
 * Dive into the most ambiguous and challenging parts of a project first, as they might kill the
 project at a later stage, wasting your earlier effort.
 * Don't focus on code quality (unit tests, refactoring, optimization, etc) during the prototyping phase, since
