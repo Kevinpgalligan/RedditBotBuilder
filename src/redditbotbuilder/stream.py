@@ -22,10 +22,7 @@ class ItemStreamer:
 
         :return: a list of new items. No guarantee is made about their order.
         """
-        items = list(self.fetcher.fetch(self.fetch_limit))
-        # Avoid allocating new memory here.
-        start_index_of_old_items = _partition(items, self._is_old)
-        del items[start_index_of_old_items:]
+        items = [item for item in self.fetcher.fetch(self.fetch_limit) if not self._is_old(item)]
         self._cache.add_all(items)
         return items
 
@@ -34,14 +31,6 @@ class ItemStreamer:
         # (e.g. due to script being stopped & started).
         return (item.created_utc < self._start_timestamp
                 or item in self._cache)
-
-def _partition(items, condition):
-    # Sorts list (in-place) into 2 parts based on a condition. Items
-    # for which the condition is False will be on the left; Trues will be on
-    # the right.
-    # Returns index of the start of the True part.
-    items.sort(key=condition)
-    return next((index for index, item in enumerate(items) if condition(item)), len(items))
 
 class ItemFetcher(abc.ABC):
 

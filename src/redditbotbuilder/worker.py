@@ -17,7 +17,7 @@ def do_forever(fn, _loop_condition_fn=always_true):
 class Worker(abc.ABC):
 
     def __init__(self):
-        self.process = Process(target=self.loop)
+        self.process = Process(target=self._loop)
 
     def start(self):
         self.process.start()
@@ -25,7 +25,7 @@ class Worker(abc.ABC):
     def stop(self):
         self.process.terminate()
 
-    def loop(self):
+    def _loop(self):
         self.initialize_within_process()
         do_forever(self.do_work)
 
@@ -56,10 +56,13 @@ class RedditOwningWorker(Worker, abc.ABC):
 
 class StreamWorker(Worker):
 
+    STARTING_FREQUENCY_IN_SECONDS = 1
+
     def __init__(self, item_streamer_factory, ingestion_queue):
         super(StreamWorker, self).__init__()
         self.item_streamer_factory = item_streamer_factory
         self.ingestion_queue = ingestion_queue
+        self.frequency_in_seconds = StreamWorker.STARTING_FREQUENCY_IN_SECONDS
 
     def initialize_within_process(self):
         # This contains a Reddit instance, which should be
@@ -68,10 +71,21 @@ class StreamWorker(Worker):
         self.item_streamer = self.item_streamer_factory.create()
 
     def do_work(self):
+        start_time = time.time()
+        print("========")
+        print("start time:", start_time)
+        print("ingestion queue size:", self.ingestion_queue.size())
         items = self.item_streamer.get_next_batch()
+        print("batch size:", len(items))
+        time_after_get = time.time()
+        print("time to get:", time_after_get - start_time)
         for item in items:
             self.ingestion_queue.put(item)
-        time.sleep(4)
+        time_after_enqueue = time.time()
+        print("time to enqueue:", time_after_enqueue - time_after_get)
+        seconds_to_sleep = max(0, self.frequency_in_seconds - (time_after_enqueue - start_time))
+        print("sleeping for:", seconds_to_sleep)
+        time.sleep(seconds_to_sleep)
 
 class FilterWorker(RedditOwningWorker):
 
@@ -82,7 +96,7 @@ class FilterWorker(RedditOwningWorker):
         self.processing_queue = processing_queue
 
     def do_work(self):
-        # fix tuple hack?
+        # todo fix ugly interface of RedditItemQueue?
         item, = self.ingestion_queue.get(self.reddit)
         action_ids = []
         cached_filter_results = {}

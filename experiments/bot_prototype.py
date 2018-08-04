@@ -9,11 +9,18 @@ from redditbotbuilder.bot import (
 
 import redditbotbuilder.util.praw
 
+import cProfile
+
 def print_comment(comment):
-    print(comment.body)
+    pass
 
 def fetcher_constructor(reddit, *args, **kwargs):
-    return CommentFetcher(reddit, "testingground4bots")
+    return CommentFetcher(reddit, "all")
+
+"""
+def main():
+    cProfile.run("do_main()", "bot-profiling")
+"""
 
 def main():
     action_id = "MyAction"
@@ -30,6 +37,7 @@ def main():
         ]
     )
     bot.run()
+
 
 if __name__ == "__main__":
     main()

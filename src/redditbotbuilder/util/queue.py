@@ -14,6 +14,9 @@ class RedditItemQueue:
         set_reddit(item, reddit)
         return (item, *rest)
 
+    def size(self):
+        return self.queue.qsize()
+
 def set_reddit(item, reddit):
     # todo this
     return item
