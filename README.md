@@ -1,5 +1,6 @@
 ## Description
-This project was born from my experience of creating Reddit bots. PRAW (Python Reddit API Wrapper)
+This project, to develop a Reddit bot framework, was born from my experience of making Reddit bots
+through PRAW (Python Reddit API Wrapper). PRAW
 is great, but it isn't tailored towards the creation of bots. There is common code that everyone
 who wants to create a bot must write: passing credentials to their script and to PRAW's Reddit 
 constructor, streaming content from Reddit, handling edge cases (e.g. infinite loop if another bot responds
