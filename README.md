@@ -50,9 +50,9 @@ redditbotbuilder.of_program_args(subreddits=["mysubreddit", "mysubreddit2"])\
 
 Under the hood, the framework would create multiple streams of "items" from Reddit: one for
 comments, one for submissions, one for private messages, etc. Each stream would be handled by
-one or more threads and would execute the user-supplied functions on the items. The user could
-also pass a filter during the construction of the bot so that, for example, only messages from a
-particular author would be processed. Many other features were imagined, such as convenience
+separate threads and would execute the user-supplied functions on the items. The items could also
+be filtered, e.g. by author. Many other features
+were imagined, such as convenience
 functions for attaching footers to the bot's replies; monitoring of the bot so that the owner would
 be notified if it crashed; built-in dynamic blacklisting (e.g. someone can PM the bot "blacklist me"
 and the bot will not reply to comments by that user); etc. Users of the API could easily add these
@@ -65,7 +65,8 @@ workaround for this: the multiprocessing module. Instead of threads, this module
 processes, each with their own Python interpreter.
  
 The use of multiple processes brought up more issues: all code calling the
-multiprocessing module has to be wrapped in a main method, and it can't process lambdas, so the
+multiprocessing module has to be wrapped in a main() function, and the multiprocessing module doesn't allow
+the use of lambdas, so the
 redditbotbuilder API was going to be more bloated and less elegant than before. Also, since each
 interpreter would have its own copy of PRAW's Reddit client, and each of those clients would have
 separate rate-limit controls, there would have to be a separate process to "allocate" Reddit requests
