@@ -1,7 +1,5 @@
 ## Description
-This is the prototype of a framework for developing Reddit bots. Its aim is to reduce the
-amount of code needed to develop robust bots using PRAW (Python Reddit API Wrapper). Here's
-what the API looks like:
+This is the prototype of a framework for developing Reddit bots. Its aim is to reduce the amount of code needed to develop robust bots using PRAW (Python Reddit API Wrapper). Here's what the API looks like:
 
 ```python
 import redditbotbuilder
@@ -19,9 +17,7 @@ from the command line with the following command:
 python ./my-bot.py <client_id> <client_secret> <user_agent> <username> <password>
 ```
 
-The framework handles the code that is common to most bots: passing credentials to their script and to PRAW's Reddit 
-constructor, streaming content from Reddit, avoiding infinite loops with other bots, blacklisting
-certain subreddits / users, handling exceptions from the Reddit API, and so on.
+The framework handles the code that is common to most bots: passing credentials to their script and to PRAW's Reddit constructor, streaming content from Reddit, avoiding infinite loops with other bots, blacklisting certain subreddits / users, handling exceptions from the Reddit API, and so on.
 
 Several actions can be attached to the same bot:
 
@@ -40,26 +36,6 @@ redditbotbuilder.of_program_args(subreddits=["mysubreddit", "mysubreddit2"])\
     .run()
 ```
 
-Under the hood, the framework creates multiple streams of "items" from Reddit: one for
-comments, one for submissions, one for private messages, etc. Each stream is handled by
-separate threads and executes the user-supplied functions on the items. The items can also
-be filtered, e.g. by author. Many other features have been imagined, such as convenience
-functions for attaching footers to the bot's replies; monitoring of the bot so that the owner is
-notified if it crashes; and built-in dynamic blacklisting (e.g. someone can PM the bot "blacklist me"
-and the bot will not reply to comments by that user). Users of the API can easily add these
-features to their bot, if they wish, through the bot builder.
+Under the hood, the framework creates multiple streams of "items" from Reddit: one for comments, one for submissions, one for private messages, etc. Each stream is handled by separate threads and executes the user-supplied functions on the items. The items can also be filtered, e.g. by author. Many other features have been imagined, such as convenience functions for attaching footers to the bot's replies; monitoring of the bot so that the owner is notified if it crashes; and built-in dynamic blacklisting (e.g. someone can PM the bot "blacklist me" and the bot will not reply to comments by that user). Users of the API can easily add these features to their bot, if they wish, through the bot builder.
 
-However, due to the shortcomings of Python's / PRAW's concurrency support, I have abandoned the
-project for now. I might revive it at some point and use JRAW (the Java equivalent of PRAW) instead,
-since concurrency is easy in Java.
-
-Some of the lessons I learned from the project:
-
-* Dive into the most ambiguous and challenging parts of a project first, as they might kill the
-project at a later stage, wasting your earlier effort.
-* Don't focus on code quality (unit tests, refactoring, optimization, etc) during the prototyping phase, since
-you might have to throw away all of the code later. And it's not good for motivation.
-* If concurrency is needed, look elsewhere than Python.
-
-It has been a fun project, and I especially enjoyed dreaming up the API. Someone else is
-free to carry on with my work or use the idea for their own project.
+However, due to the shortcomings of Python's / PRAW's concurrency support, the framework has been abandoned for now.
