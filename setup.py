@@ -4,7 +4,7 @@ from setuptools import find_packages
 setup(
     name="RedditBotBuilder",
     description="A Python framework for quickly building reddit bots",
-    version="1.0.0a1",
+    version="1.0.0",
     url="https://github.com/Kevinpgalligan/RedditBotBuilder",
     author="Kevin Galligan",
     author_email="galligankevinp@gmail.com",
