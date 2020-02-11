@@ -26,10 +26,10 @@
 # owner can blacklist users, subreddits, whatever. And whitelist subreddits.
 # multiple owners?
 
-import auth
+import rbb.auth
 import time
 from collections import defaultdict
-from praw import Comment, Submission
+from praw.models import Comment, Submission
 
 # The API limits you to pulling 100 comments at a time, anyway.
 LIMIT_ON_INBOX = 100
@@ -58,33 +58,21 @@ BASE_SUBREDDIT_BLACKLIST = normalised_set(
     "depression"
 )
 
-class RedditBot:
-    def run(self, _bot_runner_factory_fn=BotRunner):
-        runner = _bot_runner_factory_fn(
-            auth.reddit_from_program_args(),
-            self,
-            BASE_USER_BLACKLIST,
-            BASE_SUBREDDIT_BLACKLIST)
-        runner.start_loop()
+def always_true():
+    return True
 
-    def reply_to_mention(self, username, text):
-        pass
+def is_post(item):
+    return isinstance(item, Comment) or isinstance(item, Submission)
 
-    def reply_to_parent_of_mention(self, username, text):
-        pass
+def author_name(item):
+    # TODO check if this works for other item types, e.g. posts, messages...
+    return "[deleted]" if item.author is None else normalise(item.author)
 
-    def process_mention(self, comment):
-        pass
+def subreddit_name(item):
+    # TODO make sure that this isn't called for messages 
+    return normalise(item.subreddit.display_name)
 
 class BotRunner:
-
-    filters = [
-        is_post,
-        self.is_tagged_in,
-        self.interacted_too_many_times_in_thread,
-        self.author_is_blacklisted,
-        self.subreddit_is_blacklisted
-    ]
 
     def __init__(self, reddit, bot, user_blacklist, subreddit_blacklist):
         self.reddit = reddit
@@ -94,6 +82,13 @@ class BotRunner:
         self.post_counter_by_submission = defaultdict(int)
         self.user_blacklist = user_blacklist
         self.subreddit_blacklist = subreddit_blacklist
+        self.filters = [
+            is_post,
+            self.is_tagged_in,
+            self.interacted_too_many_times_in_thread,
+            self.author_is_blacklisted,
+            self.subreddit_is_blacklisted
+        ]
 
     def start_loop(self, _loop_condition=always_true):
         while _loop_condition():
@@ -129,16 +124,23 @@ class BotRunner:
         # TODO call all of the bot's user-defined functions.
         pass
 
-def always_true():
-    return True
+class RedditBot:
+    def run(
+            self,
+            _reddit_factory_fn=rbb.auth.reddit_from_program_args,
+            _bot_runner_factory_fn=BotRunner):
+        runner = _bot_runner_factory_fn(
+            _reddit_factory_fn(),
+            self,
+            BASE_USER_BLACKLIST,
+            BASE_SUBREDDIT_BLACKLIST)
+        runner.start_loop()
 
-def is_post(item):
-    return isinstance(item, Comment) or isinstance(item, Submission)
+    def reply_to_mention(self, username, text):
+        pass
 
-def author_name(item):
-    # TODO check if this works for other item types, e.g. posts, messages...
-    return "[deleted]" if item.author is None else normalise(item.author)
+    def reply_to_parent_of_mention(self, username, text):
+        pass
 
-def subreddit_name(item):
-    # TODO make sure that this isn't called for messages 
-    return normalise(item.subreddit.display_name)
+    def process_mention(self, comment):
+        pass
