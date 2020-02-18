@@ -3,7 +3,11 @@
 # - think through possible loop-breaking errors (e.g. can't get bot's
 #   own name due to rate-limiting).
 # - actually test it.
-# - unit tests.
+# - integration tests to make sure that everything is wired up correctly
+#   and improve RedditBot tests.
+# - limit number of interactions (by user, by thread, etc). And allow
+#   this to be customised.
+# - whitelisting.
 # - set up logging (customisable).
 # - specify location to save state (logs, blacklist, post count, etc).
 # - different methods of providing credentials.
@@ -27,9 +31,11 @@
 # multiple owners?
 
 import rbb.auth
+from rbb.praw import is_post, author_name, subreddit_name, normalise, has_subreddit, has_author
+from rbb.lists import BASE_USER_BLACKLIST, BASE_SUBREDDIT_BLACKLIST
+from praw.models import Comment, Submission
 import time
 from collections import defaultdict
-from praw.models import Comment, Submission
 
 # The API limits you to pulling 100 comments at a time, anyway.
 LIMIT_ON_INBOX = 100
@@ -38,57 +44,53 @@ RUN_INTERVAL_SECONDS = 60
 # Prevents bot from getting stuck in infinite loops.
 POST_LIMIT_PER_SUBMISSION = 5
 
-def normalise(name):
-    return name.lower()
-
-def normalised_set(*names):
-    return set(map(normalise, names))
-
-BASE_USER_BLACKLIST = normalised_set(
-    "AutoModerator",
-    # Don't know if this bot is still active, but it annoyed the
-    # hell out of me by stalking AnEmojipastaBot.
-    "Sub_Corrector_Bot"
-)
-
-BASE_SUBREDDIT_BLACKLIST = normalised_set(
-    # There will always be sh*tbags who try to f*ck with people
-    # in these subreddits.
-    "SuicideWatch",
-    "depression"
-)
-
 def always_true():
     return True
 
-def is_post(item):
-    return isinstance(item, Comment) or isinstance(item, Submission)
+def create_bot_runner(*args):
+    return BotRunner(*args)
 
-def author_name(item):
-    # TODO check if this works for other item types, e.g. posts, messages...
-    return "[deleted]" if item.author is None else normalise(item.author)
+# TODO add more item types; review other TODOs before doing so, as other
+# types are not supported in some places.
+SUPPORTED_ITEM_TYPES = [Comment, Submission]
 
-def subreddit_name(item):
-    # TODO make sure that this isn't called for messages 
-    return normalise(item.subreddit.display_name)
+def is_supported_item_type(item):
+    return any(isinstance(item, cls) for cls in SUPPORTED_ITEM_TYPES)
+
+class RedditBot:
+
+    def run(
+            self,
+            _reddit_factory_fn=rbb.auth.reddit_from_program_args,
+            _bot_runner_factory_fn=create_bot_runner):
+        # TODO this makes a call to Reddit, which might fail 
+        reddit = _reddit_factory_fn()
+        bot_username = normalise(reddit.user.me().name)
+        runner = _bot_runner_factory_fn(
+            reddit,
+            ItemProcessor(
+                ItemFilter(
+                    bot_username,
+                    BASE_USER_BLACKLIST,
+                    BASE_SUBREDDIT_BLACKLIST),
+                ItemDataProcessor(self)))
+        runner.start_loop()
+
+    def reply_to_mention(self, username, text):
+        pass
+
+    def reply_to_parent_of_mention(self, username, text):
+        pass
+
+    def process_mention(self, comment):
+        pass
 
 class BotRunner:
 
-    def __init__(self, reddit, bot, user_blacklist, subreddit_blacklist):
+    def __init__(self, reddit, item_processor):
         self.reddit = reddit
-        self.bot = bot
         self.inbox = reddit.inbox
-        self.user = normalise(reddit.user.me().name)
-        self.post_counter_by_submission = defaultdict(int)
-        self.user_blacklist = user_blacklist
-        self.subreddit_blacklist = subreddit_blacklist
-        self.filters = [
-            is_post,
-            self.is_tagged_in,
-            self.interacted_too_many_times_in_thread,
-            self.author_is_blacklisted,
-            self.subreddit_is_blacklisted
-        ]
+        self.item_processor = item_processor
 
     def start_loop(self, _loop_condition=always_true):
         while _loop_condition():
@@ -100,47 +102,54 @@ class BotRunner:
             # Mark it as read so that we don't get stuck processing
             # the same comment over and over due to a bug.
             self.inbox.mark_read([item])
-            if self.passes_filters(item):
-                self.pass_to_bot(item)
-                # TODO increment post counter
+            self.item_processor.process(item)
 
-    def passes_filters(self, item):
+class ItemProcessor:
+
+    def __init__(self, item_filter, item_data_processor):
+        self.item_filter = item_filter
+        self.item_data_processor = item_data_processor
+
+    def process(self, item):
+        if self.item_filter.should_process_data(item):
+            self.item_data_processor.process(item)
+
+class ItemFilter:
+    
+    def __init__(self, bot_username, user_blacklist, subreddit_blacklist):
+        self.bot_username = bot_username
+        self.user_blacklist = user_blacklist
+        self.subreddit_blacklist = subreddit_blacklist
+        self.filters = [
+            is_supported_item_type,
+            self.is_tagged_in,
+            self.author_is_blacklisted,
+            self.subreddit_is_blacklisted
+        ]
+
+    def should_process_data(self, item):
         return all(f(item) for f in self.filters)
 
     def is_tagged_in(self, item):
-        return self.user in item.body.lower()
-
-    def interacted_too_many_times_in_thread(self, item):
-        # TODO this is too restrictive...
-        return self.post_counter_by_submission[item.link_id] > POST_LIMIT_PER_SUBMISSION
+        # TODO make this more robust? Should there be a u/ before the username,
+        # or is that included in 'user' anyway? Shouldn't work if the "tag" is
+        # actually a substring of a bigger word.
+        # TODO should return True for messages & possibly other item types. But
+        # those aren't supported yet, so not a huge deal.
+        return self.bot_username in item.body.lower()
 
     def author_is_blacklisted(self, item):
-        return author_name(item) in self.user_blacklist
+        return not has_author(item) or author_name(item) not in self.user_blacklist
 
     def subreddit_is_blacklisted(self, item):
-        return subreddit_name(item) in self.subreddit_blacklist
+        return not has_subreddit(item) or subreddit_name(item) not in self.subreddit_blacklist
 
-    def pass_to_bot(self, item):
-        # TODO call all of the bot's user-defined functions.
-        pass
+class ItemDataProcessor:
 
-class RedditBot:
-    def run(
-            self,
-            _reddit_factory_fn=rbb.auth.reddit_from_program_args,
-            _bot_runner_factory_fn=BotRunner):
-        runner = _bot_runner_factory_fn(
-            _reddit_factory_fn(),
-            self,
-            BASE_USER_BLACKLIST,
-            BASE_SUBREDDIT_BLACKLIST)
-        runner.start_loop()
+    def __init__(self, bot):
+        self.bot = bot
 
-    def reply_to_mention(self, username, text):
-        pass
-
-    def reply_to_parent_of_mention(self, username, text):
-        pass
-
-    def process_mention(self, comment):
-        pass
+    def process(self, item):
+        # TODO make calls to bot.
+        # it'll be necessary for this class to have access to the Reddit instance.
+        pass 
