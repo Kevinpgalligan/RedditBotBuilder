@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 import unittest
 from praw.models import Comment, Submission, Message, Subreddit
-from rbb.praw import is_post, has_author, author_name, subreddit_name
+from rbb.praw import is_post, has_author, author_name, subreddit_name, has_text, get_text
 
 def test_is_post():
     assert not is_post(None)
@@ -49,3 +49,28 @@ class PrawTest(unittest.TestCase):
         item = Mock()
         item.subreddit.display_name = "BestSubredditEVER"
         assert "bestsubredditever" == subreddit_name(item)
+
+    def test_get_text_when_submission(self):
+        text = "sometext"
+        s = Mock(spec=Submission)
+        s.selftext = text
+        assert text == get_text(s)
+
+    def test_get_text_when_submission(self):
+        text = "sometext"
+        s = Mock(spec=Comment)
+        s.body = text
+        assert text == get_text(s)
+
+    def test_get_text_when_does_not_have_any(self):
+        with self.assertRaises(ValueError):
+            get_text(Mock(spec=Subreddit))
+
+def test_has_text():
+    assert not has_text(Mock(spec=Subreddit))
+    comment = Mock()
+    comment.body = "blah"
+    assert has_text(comment)
+    sub = Mock()
+    sub.selftext = "blah"
+    assert has_text(sub)

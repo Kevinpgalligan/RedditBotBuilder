@@ -41,3 +41,13 @@ def subreddit_name(item):
         raise ValueError(
             "Item {} is not located in a Subreddit.".format(str(item)))
     return normalise(item.subreddit.display_name)
+
+def has_text(item):
+    return any(hasattr(item, a) for a in ["body", "selftext"])
+
+def get_text(item):
+    if isinstance(item, Submission):
+        return item.selftext
+    elif isinstance(item, Comment):
+        return item.body
+    raise ValueError("Tried to get text of unsupported item {}".format(item))
