@@ -10,8 +10,8 @@ class RedditBot:
             self,
             _reddit_factory_fn=rbb.auth.reddit_from_program_args,
             _bot_runner_factory_fn=BotRunner):
-        # TODO this makes a call to Reddit, which might fail 
         reddit = _reddit_factory_fn()
+        # TODO this makes a call to Reddit, which might fail
         bot_username = normalise(reddit.user.me().name)
         runner = _bot_runner_factory_fn(
             reddit,

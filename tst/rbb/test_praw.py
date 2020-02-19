@@ -33,7 +33,7 @@ class PrawTest(unittest.TestCase):
 
     def test_author_name_when_non_normalised_name(self):
         item = Mock()
-        item.author = "BlahBlAA"
+        item.author.name = "BlahBlAA"
         assert "blahblaa" == author_name(item)
 
     def test_author_name_when_missing_name(self):

@@ -32,7 +32,7 @@ def author_name(item):
             "Item {} does not have an author.".format(str(item)))
     if item.author is None:
         return "[deleted]"
-    return normalise(item.author)
+    return normalise(item.author.name)
 
 def subreddit_name(item):
     """Returns normalised name of the subreddit to which the item belongs.

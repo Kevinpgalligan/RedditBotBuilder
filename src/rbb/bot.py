@@ -1,5 +1,4 @@
 # TODO
-# - actually test it.
 # - think through possible loop-breaking errors (e.g. can't get bot's
 #   own name due to rate-limiting).
 # - think through extension of interface, e.g. adding more data that can
@@ -95,7 +94,7 @@ class ItemProcessor:
 class ItemFilter:
     
     def __init__(self, bot_username, user_blacklist, subreddit_blacklist):
-        self.bot_username = bot_username
+        self.bot_tag = "u/" + bot_username
         self.user_blacklist = user_blacklist
         self.subreddit_blacklist = subreddit_blacklist
         self.filters = [
@@ -109,12 +108,9 @@ class ItemFilter:
         return all(f(item) for f in self.filters)
 
     def is_tagged_in(self, item):
-        # TODO make this more robust? Should there be a u/ before the username,
-        # or is that included in 'user' anyway? Shouldn't work if the "tag" is
-        # actually a substring of a bigger word.
         # TODO should return True for messages & possibly other item types. But
         # those aren't supported yet, so not a huge deal.
-        return self.bot_username in get_text(item).lower()
+        return self.bot_tag in get_text(item).lower()
 
     def author_is_blacklisted(self, item):
         return not has_author(item) or author_name(item) not in self.user_blacklist

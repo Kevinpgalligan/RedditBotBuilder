@@ -11,6 +11,9 @@ class RedditBotTest(unittest.TestCase):
 
     def test_run(self):
         reddit = Mock()
+        me = Mock()
+        me.name = "somebot"
+        reddit.user.me = Mock(return_value=me)
         reddit_factory = Mock(return_value=reddit)
         runner = Mock()
         runner_factory = Mock(return_value=runner)
@@ -81,7 +84,7 @@ class ItemFilterTest(unittest.TestCase):
 
     def mock_item(self, cls, text=None, **kwargs):
         if text is None:
-            text = "blah blah " + self.bot_name.upper() + " BLAH BLAH"
+            text = "blah blah u/" + self.bot_name.upper() + " BLAH BLAH"
         return mock_item(cls, text=text, **kwargs)
     
 class ItemDataProcessorTest(unittest.TestCase):
@@ -113,8 +116,8 @@ class ItemDataProcessorTest(unittest.TestCase):
 
         processor.process(self.comment)
         
-        bot.reply_using_parent_of_mention.assert_called_with(self.parent.author, self.parent.body)
-        bot.reply_to_mention.assert_called_with(self.comment.author, self.comment.body)
+        bot.reply_using_parent_of_mention.assert_called_with(self.parent.author.name, self.parent.body)
+        bot.reply_to_mention.assert_called_with(self.comment.author.name, self.comment.body)
         assert bot.process_mention.called
         self.comment.reply.has_calls(
             call(reply),
@@ -123,7 +126,8 @@ class ItemDataProcessorTest(unittest.TestCase):
 
 def mock_item(cls, author="someuser", sub="somesub", text="blah"):
     item = Mock(spec=cls)
-    item.author = author
+    item.author = Mock()
+    item.author.name = author
     item.subreddit = Mock()
     item.subreddit.display_name = sub
     item.body = text
