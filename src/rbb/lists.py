@@ -21,8 +21,8 @@ class Blacklist:
 
 BASE_USER_BLACKLIST = Blacklist(
     "AutoModerator",
-    # Don't know if this bot is still active, but it annoyed the
-    # hell out of me by stalking AnEmojipastaBot.
+    # Don't know if this bot is still active, but it kept getting
+    # into annoying loops with AnEmojipastaBot.
     "Sub_Corrector_Bot"
 )
 

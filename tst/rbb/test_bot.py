@@ -4,7 +4,7 @@ import pytest
 
 from praw.models import Message, Comment, Submission
 from rbb import RedditBot
-from rbb.bot import ItemFilter, ItemProcessor, ItemDataProcessor
+from rbb.bot import ItemFilter, ItemProcessor, ItemDataProcessor, BotRunner
 from rbb.lists import Blacklist
 
 class RedditBotTest(unittest.TestCase):
@@ -31,6 +31,55 @@ class RedditBotTest(unittest.TestCase):
             Blacklist("suicidewatch", "depression"))
         """
         runner.start_loop.assert_called_with()
+
+class BotRunnerTest(unittest.TestCase):
+
+    def setUp(self):
+        self.first_comment = Mock()
+        self.second_comment = Mock()
+        self.reddit = Mock()
+        self.reddit.inbox.unread = Mock(return_value=[self.first_comment, self.second_comment])
+        self.item_processor = Mock()
+        self.runner = BotRunner(self.reddit, self.item_processor)
+
+        self.sleep = Mock()
+
+    def test_start_loop_happy_case(self):
+        self.start_loop()
+        self.reddit.inbox.mark_read.assert_has_calls([
+            call([self.first_comment]),
+            call([self.second_comment])
+        ])
+        assert 2 == self.reddit.inbox.mark_read.call_count
+        self.item_processor.process.assert_has_calls([
+            call(self.first_comment),
+            call(self.second_comment)
+        ])
+        assert 2 == self.item_processor.process.call_count
+
+    def test_start_loop_exception_thrown(self):
+        self.item_processor.process = Mock(side_effect=ValueError())
+        self.start_loop()
+        self.reddit.inbox.mark_read.assert_has_calls([
+            call([self.first_comment])
+        ])
+        assert 1 == self.reddit.inbox.mark_read.call_count
+        self.item_processor.process.assert_has_calls([
+            call(self.first_comment)
+        ])
+        assert 1 == self.item_processor.process.call_count
+
+    def start_loop(self):
+        i = 0
+        def loop_condition():
+            nonlocal i
+            if i == 0:
+                i += 1
+                return True
+            return False
+        self.runner.start_loop(
+            _loop_condition=loop_condition,
+            _sleep_fn=self.sleep)
 
 class ItemProcessorTest(unittest.TestCase):
 

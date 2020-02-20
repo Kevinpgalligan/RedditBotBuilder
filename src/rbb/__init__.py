@@ -1,5 +1,5 @@
 import rbb.auth
-from rbb.praw import normalise
+from rbb.praw import normalise, call_reddit_with_retries
 from rbb.bot import BotRunner, ItemProcessor, ItemFilter, ItemDataProcessor
 from rbb.lists import BASE_USER_BLACKLIST, BASE_SUBREDDIT_BLACKLIST
 from rbb.interfaces import unimplemented
@@ -11,8 +11,10 @@ class RedditBot:
             _reddit_factory_fn=rbb.auth.reddit_from_program_args,
             _bot_runner_factory_fn=BotRunner):
         reddit = _reddit_factory_fn()
-        # TODO this makes a call to Reddit, which might fail
-        bot_username = normalise(reddit.user.me().name)
+        # This requires making an API call, so try to make it
+        # a bit more robust.
+        bot_username = call_reddit_with_retries(
+            (lambda: reddit.user.me().name))
         runner = _bot_runner_factory_fn(
             reddit,
             ItemProcessor(

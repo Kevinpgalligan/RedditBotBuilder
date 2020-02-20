@@ -1,4 +1,5 @@
-from rbb.praw import is_post, author_name, subreddit_name, has_subreddit, has_author, get_text, has_text
+from rbb.praw import (is_post, author_name, subreddit_name, has_subreddit, has_author,
+    get_text, has_text, normalise)
 from rbb.interfaces import is_implemented
 from praw.models import Comment, Submission
 import time
@@ -27,15 +28,20 @@ class BotRunner:
         self.inbox = reddit.inbox
         self.item_processor = item_processor
 
-    def start_loop(self, _loop_condition=always_true):
+    def start_loop(self, _loop_condition=always_true, _sleep_fn=time.sleep):
         while _loop_condition():
-            self.process_inbox()
-            time.sleep(RUN_INTERVAL_SECONDS)
+            try:
+                self.process_inbox()
+            except Exception as e:
+                # Don't crash the bot, even though it's possibly
+                # a bug in the framework.
+                pass
+            _sleep_fn(RUN_INTERVAL_SECONDS)
 
     def process_inbox(self):
         for item in self.inbox.unread(limit=LIMIT_ON_INBOX):
             # Mark it as read so that we don't get stuck processing
-            # the same comment over and over due to a bug.
+            # the same item over and over due to a bug.
             self.inbox.mark_read([item])
             self.item_processor.process(item)
 
@@ -52,7 +58,7 @@ class ItemProcessor:
 class ItemFilter:
     
     def __init__(self, bot_username, user_blacklist, subreddit_blacklist):
-        self.bot_tag = "u/" + bot_username
+        self.bot_tag = "u/" + normalise(bot_username)
         self.user_blacklist = user_blacklist
         self.subreddit_blacklist = subreddit_blacklist
         self.filters = [
@@ -82,9 +88,7 @@ class ItemDataProcessor:
         self.bot = bot
 
     def process(self, item):
-        # TODO protection against the user f*cking up their implementation?
         if isinstance(item, Comment) and is_implemented(self.bot.reply_using_parent_of_mention):
-            # TODO protection against parent being deleted?
             parent = item.parent()
             item.reply(
                 self.bot.reply_using_parent_of_mention(
