@@ -1,6 +1,7 @@
 from rbb.praw import (is_post, author_name, subreddit_name, has_subreddit, has_author,
     get_text, has_text, normalise)
 from rbb.interfaces import is_implemented
+from rbb.logging import log_info, log_error
 from praw.models import Comment, Submission
 import time
 
@@ -35,15 +36,18 @@ class BotRunner:
             except Exception as e:
                 # Don't crash the bot, even though it's possibly
                 # a bug in the framework.
-                pass
+                log_error("Got exception, inbox processing interrupted: %s", e)
             _sleep_fn(RUN_INTERVAL_SECONDS)
 
     def process_inbox(self):
         for item in self.inbox.unread(limit=LIMIT_ON_INBOX):
+            log_info("Got item from inbox: %s", str(item.__dict__))
             # Mark it as read so that we don't get stuck processing
             # the same item over and over due to a bug.
             self.inbox.mark_read([item])
+            log_info("Marked item as read.")
             self.item_processor.process(item)
+            log_info("Finished processing item.")
 
 class ItemProcessor:
 
@@ -88,6 +92,7 @@ class ItemDataProcessor:
         self.bot = bot
 
     def process(self, item):
+        # TODO abstract these, pairs of 1) condition / filter, and 2) the action.
         if isinstance(item, Comment) and is_implemented(self.bot.reply_using_parent_of_mention):
             parent = item.parent()
             item.reply(
