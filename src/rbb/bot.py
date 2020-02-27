@@ -1,5 +1,5 @@
-from rbb.praw import (is_post, author_name, subreddit_name, has_subreddit, has_author,
-    get_text, has_text, normalise)
+from rbb.praw import (is_post, author_name, subreddit_name, has_subreddit,
+    has_author, get_text, has_text, normalise)
 from rbb.interfaces import is_implemented
 from rbb.logging import log_info, log_error
 from praw.models import Comment, Submission
@@ -60,7 +60,7 @@ class ItemProcessor:
             self.item_data_processor.process(item)
 
 class ItemFilter:
-    
+
     def __init__(self, bot_username, user_blacklist, subreddit_blacklist):
         self.bot_tag = "u/" + normalise(bot_username)
         self.user_blacklist = user_blacklist
@@ -93,6 +93,7 @@ class ItemDataProcessor:
 
     def process(self, item):
         # TODO abstract these, pairs of 1) condition / filter, and 2) the action.
+        # And log.
         if isinstance(item, Comment) and is_implemented(self.bot.reply_using_parent_of_mention):
             parent = item.parent()
             item.reply(

@@ -1,4 +1,5 @@
 import rbb.auth
+from rbb.auth import AuthorisationMethod
 from rbb.praw import normalise, call_reddit_with_retries
 from rbb.bot import BotRunner, ItemProcessor, ItemFilter, ItemDataProcessor
 from rbb.lists import BASE_USER_BLACKLIST, BASE_SUBREDDIT_BLACKLIST
@@ -13,12 +14,13 @@ class RedditBot:
             log_to_console=True,
             log_to_file=False,
             log_dir=".",
-            _reddit_factory_fn=rbb.auth.get_reddit_from_program_args,
-            _reddit_username_fn=rbb.auth.get_reddit_username_from_program_args,
+            auth_method=AuthorisationMethod.PROGRAM_ARGS,
+            _get_auth_provider_fn=rbb.auth.get_auth_provider,
             _bot_runner_factory_fn=BotRunner,
             _configure_logging_fn=rbb.logging.configure):
-        reddit = _reddit_factory_fn()
-        bot_username = _reddit_username_fn()
+        auth_provider = _get_auth_provider_fn(auth_method)
+        reddit = auth_provider.get_reddit()
+        bot_username = auth_provider.get_username()
         _configure_logging_fn(log_to_console, log_to_file, log_dir, bot_username)
         log_info("Starting bot: u/%s", bot_username)
         runner = _bot_runner_factory_fn(

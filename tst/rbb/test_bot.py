@@ -4,6 +4,7 @@ import pytest
 
 from praw.models import Message, Comment, Submission
 from rbb import RedditBot
+from rbb.auth import AuthorisationMethod
 from rbb.bot import ItemFilter, ItemProcessor, ItemDataProcessor, BotRunner
 from rbb.lists import Blacklist
 
@@ -11,17 +12,20 @@ class RedditBotTest(unittest.TestCase):
 
     def test_run(self):
         reddit = Mock()
-        me = Mock()
-        me.name = "somebot"
-        reddit.user.me = Mock(return_value=me)
-        reddit_factory = Mock(return_value=reddit)
+        username = "flerb"
+        auth_provider = Mock()
+        auth_provider.get_reddit = Mock(return_value=reddit)
+        auth_provider.get_username = Mock(return_value=username)
+        get_auth_provider = Mock(return_value=auth_provider)
+        configure_logging = Mock()
         runner = Mock()
         runner_factory = Mock(return_value=runner)
 
         bot = RedditBot()
         bot.run(
-            _reddit_factory_fn=reddit_factory,
-            _bot_runner_factory_fn=runner_factory)
+            _get_auth_provider_fn=get_auth_provider,
+            _bot_runner_factory_fn=runner_factory,
+            _configure_logging_fn=configure_logging)
         
         """
         runner_factory.assert_called_with(
@@ -30,6 +34,8 @@ class RedditBotTest(unittest.TestCase):
             Blacklist("AutoModerator", "sub_corrector_bot"),
             Blacklist("suicidewatch", "depression"))
         """
+        get_auth_provider.assert_called_with(AuthorisationMethod.PROGRAM_ARGS)
+        configure_logging.assert_called_with(True, False, ".", username)
         runner.start_loop.assert_called_with()
 
 class BotRunnerTest(unittest.TestCase):

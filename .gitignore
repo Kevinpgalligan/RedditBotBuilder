@@ -19,3 +19,5 @@ build/
 .tox/
 
 stuff
+
+*swp
