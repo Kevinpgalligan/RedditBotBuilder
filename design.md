@@ -1,6 +1,7 @@
 # MVP (TODO)
-* (10 mins) add enough logging to solve the mystery of the "doesn't reply to submissions".
-* (30 mins) solve the mystery.
+* ask why tags don't work in submissions.
+* add stack trace to exception logging, if possible.
+* (20 mins) add tests for BotCaller classes -- and refactor, if thought to be necessary.
 * (30 mins) Refactor: make names nicer (ideas: "tag" instead of "mention". "InteractiveBot" and "ScannerBot" rather than "RedditBot"), and allow extension of interface, e.g. adding more data that can be passed cleanly to the bot. As of now, can't add new data without breaking old interface. So should probably pass only a Data object or Input object for each method, which can be expanded with new attributes.
 * (10 mins) (non-critical) wrap calls to user-defined functions with retries.
 * (5 mins) (quick check) see what methods on the models require a call to the API, make sure that they are not being used unnecessarily (eg user hasn't implemented method that requires them).

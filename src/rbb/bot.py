@@ -1,6 +1,5 @@
 from rbb.praw import (is_post, author_name, subreddit_name, has_subreddit,
-    has_author, get_text, has_text, normalise)
-from rbb.interfaces import is_implemented
+    has_author, get_text, normalise)
 from rbb.logging import log_info, log_error
 from praw.models import Comment, Submission
 import time
@@ -32,6 +31,7 @@ class BotRunner:
     def start_loop(self, _loop_condition=always_true, _sleep_fn=time.sleep):
         while _loop_condition():
             try:
+                log_info("Processing inbox...")
                 self.process_inbox()
             except Exception as e:
                 # Don't crash the bot, even though it's possibly
@@ -42,7 +42,7 @@ class BotRunner:
     def process_inbox(self):
         for item in self.inbox.unread(limit=LIMIT_ON_INBOX):
             log_info("Got item from inbox: %s", str(item.__dict__))
-            # Mark it as read so that we don't get stuck processing
+            # Mark it as read FIRST so that we don't get stuck processing
             # the same item over and over due to a bug.
             self.inbox.mark_read([item])
             log_info("Marked item as read.")
@@ -88,19 +88,15 @@ class ItemFilter:
 
 class ItemDataProcessor:
 
-    def __init__(self, bot):
+    def __init__(self, bot, bot_callers):
         self.bot = bot
+        self.bot_callers = bot_callers
 
     def process(self, item):
-        # TODO abstract these, pairs of 1) condition / filter, and 2) the action.
-        # And log.
-        if isinstance(item, Comment) and is_implemented(self.bot.reply_using_parent_of_mention):
-            parent = item.parent()
-            item.reply(
-                self.bot.reply_using_parent_of_mention(
-                    author_name(parent),
-                    get_text(parent)))
-        if has_text(item) and is_implemented(self.bot.reply_to_mention):
-            item.reply(self.bot.reply_to_mention(author_name(item), get_text(item)))
-        if is_implemented(self.bot.process_mention):
-            self.bot.process_mention(item)
+        for bot_caller in self.bot_callers:
+            should_call, reason = bot_caller.should_call(self.bot, item)
+            if should_call:
+                log_info("executing bot action '%s'", bot_caller.description())
+                bot_caller.call(self.bot, item)
+            else:
+                log_info("not executing bot action '%s', because %s", bot_caller.description(), reason)

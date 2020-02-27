@@ -141,43 +141,6 @@ class ItemFilterTest(unittest.TestCase):
         if text is None:
             text = "blah blah u/" + self.bot_name.upper() + " BLAH BLAH"
         return mock_item(cls, text=text, **kwargs)
-    
-class ItemDataProcessorTest(unittest.TestCase):
-
-    def setUp(self):
-        self.comment = mock_item(Comment)
-        self.parent = mock_item(Comment, author="otheruser", text="parenttext")
-        self.comment.parent = Mock(return_value=self.parent)
-    
-    def test_process_when_no_methods_implemented(self):
-        # TODO make this more general... when new methods are added,
-        # it will be easy to forget to add them here.
-        bot = RedditBot()
-        processor = ItemDataProcessor(bot)
-        processor.process(self.comment)
-        assert not self.comment.reply.called
-        assert not self.comment.parent.called
-
-    def test_process_when_methods_implemented(self):
-        # TODO make this more general... when new methods are added,
-        # it will be easy to forget to add them here.
-        reply = "hi"
-        parent_reply = "hi parent"
-        bot = Mock(spec=Comment)
-        bot.reply_using_parent_of_mention = Mock(return_value=parent_reply, spec=[])
-        bot.reply_to_mention = Mock(return_value=reply, spec=[])
-        bot.process_mention = Mock(spec=[])
-        processor = ItemDataProcessor(bot)
-
-        processor.process(self.comment)
-        
-        bot.reply_using_parent_of_mention.assert_called_with(self.parent.author.name, self.parent.body)
-        bot.reply_to_mention.assert_called_with(self.comment.author.name, self.comment.body)
-        assert bot.process_mention.called
-        self.comment.reply.has_calls(
-            call(reply),
-            call(parent_reply))
-        
 
 def mock_item(cls, author="someuser", sub="somesub", text="blah"):
     item = Mock(spec=cls)
